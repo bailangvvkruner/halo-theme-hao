@@ -9,15 +9,57 @@
     <link rel="shortcut icon"
           th:href="@{${#strings.isEmpty(site.favicon) ? assets_link + '/images/hao-logo.jpg' : site.favicon}}"/>
 
-    <script th:src="${assets_link + '/libs/jquery/jquery.min.js'}"></script>
+    <!-- DNS预解析和资源预加载 -->
+    <link rel="dns-prefetch" th:href="${assets_link}">
+    <link rel="preconnect" th:href="${assets_link}" crossorigin>
+    <link rel="preload" th:href="${assets_link + '/libs/jquery/jquery.min.js'}" as="script">
+    <link rel="preload" th:href="${assets_link + '/js/heo.js' + theme_version}" as="script">
+    <link rel="preload" th:href="${assets_link + '/zhheo/zhheoblog.css' + theme_version}" as="style">
+    
+    <!-- 关键CSS内联 -->
+    <style>
+        :root{--heo-card-bg:#fff;--heo-main:#425AEF;--heo-bg:#f0f2f5}
+        body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:var(--heo-bg)}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+        .header{background:var(--heo-card-bg);padding:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+        .loading{position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,#425AEF,#15c6ff);z-index:9999;animation:loading 2s infinite}
+        @keyframes loading{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+    </style>
 
-    <script th:src="${assets_link + '/js/heo.js' + theme_version}"></script>
+    <!-- 异步加载主要资源 -->
+    <script>
+        // 异步加载jQuery
+        (function(){
+            var script = document.createElement('script');
+            script.src = '[[${assets_link}]]/libs/jquery/jquery.min.js';
+            script.async = true;
+            script.onload = function() {
+                // jQuery加载完成后，异步加载heo.js
+                var heoScript = document.createElement('script');
+                heoScript.src = '[[${assets_link}]]/js/heo.js[[${theme_version}]]';
+                heoScript.async = true;
+                document.head.appendChild(heoScript);
+            };
+            document.head.appendChild(script);
+        })();
 
-    <link rel="stylesheet" th:href="${assets_link + '/zhheo/zhheoblog.css' + theme_version}">
-
-    <link rel="stylesheet" th:href="${assets_link + '/zhheo/custom.css' + theme_version}">
-
-    <link rel="stylesheet" th:href="${assets_link + '/zhheo/commentBarrage.css'}">
+        // 异步加载CSS
+        (function(){
+            var styles = [
+                '[[${assets_link}]]/zhheo/zhheoblog.css[[${theme_version}]]',
+                '[[${assets_link}]]/zhheo/custom.css[[${theme_version}]]',
+                '[[${assets_link}]]/zhheo/commentBarrage.css'
+            ];
+            styles.forEach(function(href) {
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = href;
+                link.media = 'print';
+                link.onload = function() { this.media = 'all'; };
+                document.head.appendChild(link);
+            });
+        })();
+    </script>
 
     <style th:if="${theme.config.other.scrollbarLinearGradientEnable}">
         *::-webkit-scrollbar-thumb {

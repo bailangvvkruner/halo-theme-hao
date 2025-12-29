@@ -1,13 +1,19 @@
 name: Build distribution theme
 
 on:
-  release:
-    types:
-      - created
+  # release:
+  #   types:
+  #     - created
+  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: |
+      - self-hosted
+      - linux
+      - x64
     steps:
       - uses: actions/checkout@v3
       - name: Set up Node.js

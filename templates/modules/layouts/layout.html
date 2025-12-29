@@ -119,23 +119,110 @@
 <div th:replace="~{modules/widgets/right-menu}"/>
 
 <div>
-    <script th:src="${assets_link + '/js/utils.js' + theme_version}"></script>
-    <script th:src="${assets_link + '/js/halo.js' + theme_version}"></script>
-    <script th:src="${assets_link + '/js/main.js' + theme_version}"></script>
-    <script charset="utf-8" data-pjax th:src="${assets_link + '/zhheo/blogex.js' + theme_version}"></script>
-    <script th:src="${assets_link + '/js/tw_cn.js' + theme_version}"></script>
-    <!-- https://instant.page/ 网站预加载， 放在 </body> 之前 -->
-    <script th:src="${assets_link + '/libs/instantpage/instantpage.min.js'}"
-            type="module"></script>
-    
-    <script th:src="${assets_link + '/libs/vanilla-lazyload/lazyload.iife.min.js'}"></script>
-    
-    <!-- 右下角通知 https://www.polonel.com/snackbar/ -->
-    <!-- todo head 中有它的 css，应该可以写一块，并改成后台可配置的功能，代码中应该还有他的 js -->
-    <script th:src="${assets_link + '/libs/node-snackbar/snackbar.min.js'}"></script>
-    
+    <!-- 异步加载核心JavaScript库 -->
+    <script>
+        // 异步加载核心业务库
+        (function(){
+            var coreScripts = [
+                '[[${assets_link}]]/js/utils.js[[${theme_version}]]',
+                '[[${assets_link}]]/js/halo.js[[${theme_version}]]',
+                '[[${assets_link}]]/js/main.js[[${theme_version}]]',
+                '[[${assets_link}]]/zhheo/blogex.js[[${theme_version}]]',
+                '[[${assets_link}]]/js/tw_cn.js[[${theme_version}]]'
+            ];
+            
+            function loadScriptSequentially(urls, index) {
+                if (index >= urls.length) return;
+                var script = document.createElement('script');
+                script.src = urls[index];
+                script.async = true;
+                script.onload = function() {
+                    loadScriptSequentially(urls, index + 1);
+                };
+                document.body.appendChild(script);
+            }
+            
+            // 页面加载完成后开始加载核心库
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    loadScriptSequentially(coreScripts, 0);
+                });
+            } else {
+                loadScriptSequentially(coreScripts, 0);
+            }
+        })();
+    </script>
+
+    <!-- 异步加载第三方库（按需） -->
+    <script>
+        // 异步加载工具库
+        (function(){
+            var toolScripts = [
+                '[[${assets_link}]]/libs/instantpage/instantpage.min.js',
+                '[[${assets_link}]]/libs/vanilla-lazyload/lazyload.iife.min.js',
+                '[[${assets_link}]]/libs/node-snackbar/snackbar.min.js',
+                '[[${assets_link}]]/libs/qrcode/qrcode.min.js',
+                '[[${assets_link}]]/libs/waterfall/waterfall.min.js',
+                '[[${assets_link}]]/libs/fast-average-color/index.browser.min.js',
+                '[[${assets_link}]]/libs/view-image/view-image.min.js',
+                '[[${assets_link}]]/libs/aplayer/APlayer.min.js',
+                '[[${assets_link}]]/libs/aplayer/Meting2.min.js',
+                '[[${assets_link}]]/libs/pjax/pjax.min.js'
+            ];
+            
+            // 延迟加载工具库
+            setTimeout(function() {
+                toolScripts.forEach(function(src) {
+                    var script = document.createElement('script');
+                    script.src = src;
+                    script.async = true;
+                    document.body.appendChild(script);
+                });
+            }, 1000);
+        })();
+    </script>
+
+    <!-- 条件加载的库 -->
+    <script>
+        // 条件加载
+        (function(){
+            // 按需加载的库
+            var conditionalScripts = [];
+            
+            // 延迟加载条件库
+            setTimeout(function() {
+                // 检查是否需要加载swiper
+                if (typeof themeConfig !== 'undefined' && themeConfig.top && themeConfig.top.moment) {
+                    var swiperScript = document.createElement('script');
+                    swiperScript.src = '[[${assets_link}]]/libs/swiper/swiper-bundle.min.js';
+                    swiperScript.async = true;
+                    document.body.appendChild(swiperScript);
+                }
+                
+                // 检查是否需要加载右键菜单
+                if (typeof themeConfig !== 'undefined' && themeConfig.tool && themeConfig.tool.rightMenu && themeConfig.tool.rightMenu.rightMenuEnable) {
+                    var menuScript = document.createElement('script');
+                    menuScript.src = '[[${assets_link}]]/zhheo/rightmenu.js';
+                    menuScript.async = true;
+                    document.body.appendChild(menuScript);
+                }
+                
+                // 检查是否需要加载评论弹幕
+                if (typeof themeConfig !== 'undefined' && themeConfig.comments && 
+                    themeConfig.comments.commentBarrageConfig && themeConfig.comments.commentBarrageConfig.commentBarrageEnable &&
+                    themeConfig.comments.commentsEnable) {
+                    var barrageScript = document.createElement('script');
+                    barrageScript.src = '[[${assets_link}]]/zhheo/commentBarrage.js';
+                    barrageScript.async = true;
+                    barrageScript.setAttribute('data-pjax', '');
+                    document.body.appendChild(barrageScript);
+                }
+            }, 1500);
+        })();
+    </script>
+
+    <!-- 动态标题和评论配置 -->
     <div class="js-pjax">
-        <!-- 动态标题 -->
         <script th:replace="~{modules/common/diytitle}"/>
     </div>
     
@@ -146,50 +233,16 @@
         <script th:if="${theme.config.comments.visitorMail.visitorMailEnable}">var visitorMail = "[(${theme.config.comments.visitorMail.mail})]";</script>
     </th:block>
     
-    <!--音乐-->
+    <!--音乐配置-->
     <script>var meting_api = "[(${theme.config.tool.nav_music.meting_api})]"; </script>
     
     <!-- 深色模式下添加粒子效果canvas -->
     <canvas th:if="${theme.config.style.universe}" id="universe" width="1312" height="880"></canvas>
     <script th:if="${theme.config.style.universe}" async="" th:src="${assets_link + '/libs/canvas/dark.js'}"></script>
-    
-    <!-- https://davidshimjs.github.io/qrcodejs/ 生成二维码 -->
-    <!-- 应该是文章页分享使用 -->
-    <script data-pjax th:src="${assets_link + '/libs/qrcode/qrcode.min.js'}" ></script>
-    
-    <!--  https://raphamorim.io/waterfall.js/  应该是这个 还有相关的 js 代码 是否可以调整-->
-    <script th:src="${assets_link + '/libs/waterfall/waterfall.min.js'}"></script>
-    
-    <!-- 获取主色 https://lokeshdhakar.com/projects/color-thief/ -->
-    <!--<script th:src="@{/assets/libs/color-thief/color-thief.umd.js}"></script>-->
-    <script th:src="${assets_link + '/libs/fast-average-color/index.browser.min.js'}"></script>
-    
-    <script th:src="${assets_link + '/libs/view-image/view-image.min.js'}"></script>
 
+    <!-- 异步加载CSS -->
     <link rel="stylesheet" th:href="${assets_link + '/libs/aplayer/APlayer.min.css'}"
-          media="all" onload="this.media='all'">
-    
-    <script th:src="${assets_link + '/libs/aplayer/APlayer.min.js'}"></script>
-    
-    <script th:src="${assets_link + '/libs/aplayer/Meting2.min.js'}"></script>
-    
-    <script th:src="${assets_link + '/libs/pjax/pjax.min.js'}"></script>
-    
-    <!-- swiper 在瞬间滚动时会使用 -->
-    <script th:if="${theme.config.top.moment}" data-pjax
-            th:src="${assets_link + '/libs/swiper/swiper-bundle.min.js'}"></script>
-    
-    <!-- 右键菜单 -->
-    <script th:if="${theme.config.tool.rightMenu.rightMenuEnable}"
-            th:src="${assets_link + '/zhheo/rightmenu.js'}"></script>
-    
-    <!-- 评论弹幕 -->
-    <script th:if="${ ( ( not #strings.isEmpty(theme.config.comments.twikoos.envId)  && not #strings.isEmpty(theme.config.comments.twikoos.accessToken) ) ||
-        ( not #strings.isEmpty(theme.config.comments.artalks.server) && not #strings.isEmpty(theme.config.comments.artalks.siteName)) ||
-          (#strings.equals(theme.config.comments.use, 'Waline') && not #strings.isEmpty(theme.config.comments.walines.serverURL)) )
-        && theme.config.comments.commentBarrageConfig.commentBarrageEnable
-        && theme.config.comments.commentsEnable}" data-pjax=""
-            th:src="${assets_link + '/zhheo/commentBarrage.js'}"></script>
+          media="print" onload="this.media='all'">
     
     <!-- Tocbot 目录生成 start -->
     <th:block th:replace="~{modules/common/toc-bot}"/>
