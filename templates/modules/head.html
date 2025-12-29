@@ -9,58 +9,69 @@
     <link rel="shortcut icon"
           th:href="@{${#strings.isEmpty(site.favicon) ? assets_link + '/images/hao-logo.jpg' : site.favicon}}"/>
 
-    <!-- DNS预解析和资源预加载 -->
+    <!-- DNS预解析和预连接优化 -->
     <link rel="dns-prefetch" th:href="${assets_link}">
     <link rel="preconnect" th:href="${assets_link}" crossorigin>
-    <link rel="preload" th:href="${assets_link + '/libs/jquery/jquery.min.js'}" as="script">
-    <link rel="preload" th:href="${assets_link + '/js/heo.js' + theme_version}" as="script">
-    <link rel="preload" th:href="${assets_link + '/zhheo/zhheoblog.css' + theme_version}" as="style">
+    <link rel="dns-prefetch" href="https://cloud.umami.is">
+    <link rel="dns-prefetch" href="https://cn.cravatar.com">
     
-    <!-- 关键CSS内联 -->
+    <!-- 关键CSS内联 - 最小化核心样式 -->
     <style>
         :root{--heo-card-bg:#fff;--heo-main:#425AEF;--heo-bg:#f0f2f5}
-        body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:var(--heo-bg)}
+        body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:var(--heo-bg);-webkit-font-smoothing:antialiased}
         .container{max-width:1200px;margin:0 auto;padding:20px}
         .header{background:var(--heo-card-bg);padding:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
         .loading{position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,#425AEF,#15c6ff);z-index:9999;animation:loading 2s infinite}
         @keyframes loading{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+        /* 基础布局样式 */
+        .hide-aside .aside-content{display:none}
+        .color-scheme-dark{--heo-card-bg:#1e1e1e;--heo-bg:#121212}
     </style>
 
-    <!-- 异步加载主要资源 -->
+    <!-- 异步加载核心资源 -->
     <script>
-        // 异步加载jQuery
         (function(){
-            var script = document.createElement('script');
-            script.src = '[[${assets_link}]]/libs/jquery/jquery.min.js';
-            script.async = true;
-            script.onload = function() {
-                // jQuery加载完成后，异步加载heo.js
+            // 1. 异步加载jQuery（核心依赖）
+            var jqueryScript = document.createElement('script');
+            jqueryScript.src = '[[${assets_link}]]/libs/jquery/jquery.min.js';
+            jqueryScript.async = true;
+            document.head.appendChild(jqueryScript);
+
+            // 2. jQuery加载完成后，异步加载heo.js
+            jqueryScript.onload = function() {
                 var heoScript = document.createElement('script');
                 heoScript.src = '[[${assets_link}]]/js/heo.js[[${theme_version}]]';
                 heoScript.async = true;
                 document.head.appendChild(heoScript);
             };
-            document.head.appendChild(script);
-        })();
-
-        // 异步加载CSS
-        (function(){
-            var styles = [
-                '[[${assets_link}]]/zhheo/zhheoblog.css[[${theme_version}]]',
-                '[[${assets_link}]]/zhheo/custom.css[[${theme_version}]]',
-                '[[${assets_link}]]/zhheo/commentBarrage.css'
-            ];
-            styles.forEach(function(href) {
-                var link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = href;
-                link.media = 'print';
-                link.onload = function() { this.media = 'all'; };
-                document.head.appendChild(link);
-            });
         })();
     </script>
 
+    <!-- 异步加载所有CSS - 使用media="print"技巧 -->
+    <link rel="stylesheet" th:href="${assets_link}/zhheo/zhheoblog.css${theme_version}" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/zhheo/custom.css${theme_version}" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/zhheo/commentBarrage.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/libs/prism/prism.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/libs/prism/themes/prism-one-light.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/libs/prism/code.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/libs/node-snackbar/snackbar.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/libs/aplayer/APlayer.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" th:href="${assets_link}/icon/iconfont.css${theme_version}" media="print" onload="this.media='all'">
+    
+    <!-- 备用noscript标签 -->
+    <noscript>
+        <link rel="stylesheet" th:href="${assets_link}/zhheo/zhheoblog.css${theme_version}">
+        <link rel="stylesheet" th:href="${assets_link}/zhheo/custom.css${theme_version}">
+        <link rel="stylesheet" th:href="${assets_link}/zhheo/commentBarrage.css">
+        <link rel="stylesheet" th:href="${assets_link}/libs/prism/prism.min.css">
+        <link rel="stylesheet" th:href="${assets_link}/libs/prism/themes/prism-one-light.css">
+        <link rel="stylesheet" th:href="${assets_link}/libs/prism/code.css">
+        <link rel="stylesheet" th:href="${assets_link}/libs/node-snackbar/snackbar.min.css">
+        <link rel="stylesheet" th:href="${assets_link}/libs/aplayer/APlayer.min.css">
+        <link rel="stylesheet" th:href="${assets_link}/icon/iconfont.css${theme_version}">
+    </noscript>
+
+    <!-- 滚动条样式 - 条件加载 -->
     <style th:if="${theme.config.other.scrollbarLinearGradientEnable}">
         *::-webkit-scrollbar-thumb {
             background-color: var(--heo-main);
@@ -69,24 +80,30 @@
         }
     </style>
 
-    <!-- swiper 在瞬间滚动时会使用 -->
-    <link th:if="${theme.config.top.moment}" rel="stylesheet" th:href="${assets_link + '/libs/swiper/swiper-bundle.min.css'}"/>
-    
-    <!-- 右下角通知 -->
-    <link th:href="${assets_link + '/libs/node-snackbar/snackbar.min.css'}"
-          media="print"
-          onload='this.media="all"'
-          rel="stylesheet"
-    />
+    <!-- 条件性资源加载 -->
+    <th:block th:if="${theme.config.top.moment}">
+        <link rel="preload" th:href="${assets_link + '/libs/swiper/swiper-bundle.min.css'}" as="style" onload="this.onload=null">
+        <link rel="prefetch" th:href="${assets_link + '/libs/swiper/swiper-bundle.min.css'}">
+    </th:block>
+
+    <!-- 通知系统CSS - 异步加载 -->
+    <link rel="preload" th:href="${assets_link + '/libs/node-snackbar/snackbar.min.css'}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" th:href="${assets_link + '/libs/node-snackbar/snackbar.min.css'}"></noscript>
+
+    <!-- 代码高亮CSS - 延迟加载 -->
+    <link rel="preload" th:href="${assets_link + '/libs/prism/prism.min.css'}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" th:href="${assets_link + '/libs/prism/themes/prism-one-light.css'}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" th:href="${assets_link + '/libs/prism/code.css'}" as="style" onload="this.onload=null;this.rel='stylesheet'">
 
     <!-- 代码块自动识别语言 -->
     <th:block th:replace="~{modules/common/code}"/>
-    <!--  代码块-->
+    <!-- 代码块 -->
     <th:block th:replace="~{macro/prism-code}"/>
 
     <!-- 页脚内容-样式一 -->
     <th:block th:replace="~{modules/common/footer-style-one}"/>
 
+    <!-- 核心工具函数 - 内联 -->
     <script>
         (win => {
             win.saveToLocal = {
@@ -100,16 +117,11 @@
                     }
                     localStorage.setItem(key, JSON.stringify(item))
                 },
-
                 get: function getWithExpiry(key) {
                     const itemStr = localStorage.getItem(key)
-
-                    if (!itemStr) {
-                        return undefined
-                    }
+                    if (!itemStr) return undefined
                     const item = JSON.parse(itemStr)
                     const now = new Date()
-
                     if (now.getTime() > item.expiry) {
                         localStorage.removeItem(key)
                         return undefined
@@ -150,15 +162,15 @@
             win.activateDarkMode = function () {
                 document.documentElement.setAttribute('data-theme', 'dark')
                 document.documentElement.classList.add('color-scheme-dark')
-                heo.initThemeColor()
+                if (typeof heo !== 'undefined') heo.initThemeColor()
             }
             win.activateLightMode = function () {
                 document.documentElement.setAttribute('data-theme', 'light')
                 document.documentElement.classList.remove('color-scheme-dark')
-                heo.initThemeColor()
+                if (typeof heo !== 'undefined') heo.initThemeColor()
             }
+            
             const t = saveToLocal.get('theme')
-
             const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
             const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
             const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
@@ -181,10 +193,8 @@
             } else if (t === 'light') activateLightMode()
             else activateDarkMode()
 
-            if("[[${theme.config.style.colorScheme}]]" === 'dark')
-                activateDarkMode()
-            if("[[${theme.config.style.colorScheme}]]" === 'light')
-                activateLightMode()
+            if("[[${theme.config.style.colorScheme}]]" === 'dark') activateDarkMode()
+            if("[[${theme.config.style.colorScheme}]]" === 'light') activateLightMode()
 
             const asideStatus = saveToLocal.get('aside-status')
             if (asideStatus !== undefined) {
@@ -197,22 +207,60 @@
         })(window)
     </script>
 
-    <!-- 动态加载条 -->
-    <script data-pace-options="{ &quot;restartOnRequestAfter&quot;:false,&quot;eventLag&quot;:false}"
-            th:src="${assets_link + '/libs/pace/pace.min.js'}"
-            th:if="${theme.config.other.loadingBoxs.loadProgressBar}">
+    <!-- 动态加载条 - 延迟加载 -->
+    <script th:if="${theme.config.other.loadingBoxs.loadProgressBar}">
+        (function(){
+            // 延迟2秒加载进度条，避免阻塞首屏
+            setTimeout(function() {
+                var script = document.createElement('script');
+                script.src = '[[${assets_link}]]/libs/pace/pace.min.js';
+                script.setAttribute('data-pace-options', '{"restartOnRequestAfter":false,"eventLag":false}');
+                document.head.appendChild(script);
+            }, 2000);
+        })();
     </script>
 
-    <!-- 复制 https://githubfast.com/zenorocha/clipboard.js -->
-    <script th:src="${assets_link + '/libs/clipboard/clipboard.min.js'}"></script>
+    <!-- 复制功能 - 延迟加载 -->
+    <script>
+        // 延迟1.5秒加载剪贴板功能
+        setTimeout(function() {
+            var script = document.createElement('script');
+            script.src = '[[${assets_link}]]/libs/clipboard/clipboard.min.js';
+            script.async = true;
+            document.head.appendChild(script);
+        }, 1500);
+    </script>
 
-    <!-- 关于统计-->
-    <script th:if="${#strings.contains(theme.config.about.widget_list,'statistics-map')}" th:src="${assets_link + '/libs/countup/countup.js'}"></script>
+    <!-- 统计功能 - 条件延迟加载 -->
+    <script th:if="${#strings.contains(theme.config.about.widget_list,'statistics-map')}">
+        // 延迟2秒加载统计功能
+        setTimeout(function() {
+            var script = document.createElement('script');
+            script.src = '[[${assets_link}]]/libs/countup/countup.js';
+            script.async = true;
+            document.head.appendChild(script);
+        }, 2000);
+    </script>
 
-    <!-- icon图标 -->
-    <link rel="stylesheet" th:href="${assets_link + '/icon/iconfont.css' + theme_version}">
+    <!-- icon图标 - 预加载 -->
+    <link rel="preload" th:href="${assets_link + '/icon/iconfont.css' + theme_version}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" th:href="${assets_link + '/icon/iconfont.css' + theme_version}"></noscript>
 
     <th:block th:replace="~{modules/variables/site-config}" />
 
+    <!-- 分析脚本 - 最后加载 -->
+    <script>
+        // 延迟3秒加载分析脚本，确保不影响用户体验
+        setTimeout(function() {
+            if (typeof umami === 'undefined') {
+                var script = document.createElement('script');
+                script.src = 'https://cloud.umami.is/script.js';
+                script.async = true;
+                script.setAttribute('data-host-url', 'https://cloud.umami.is');
+                script.setAttribute('data-website-id', 'your-website-id');
+                document.head.appendChild(script);
+            }
+        }, 3000);
+    </script>
 
 </th:block>

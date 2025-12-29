@@ -17,7 +17,16 @@
     <!--  解决 katex pjax问题 -->
     <script th:if="${pluginFinder.available('plugin-katex')}" defer=""
             src="/plugins/plugin-katex/assets/static/katex.min.js"></script>
-    <script th:src="${assets_link + '/js/custom.js' + theme_version}"></script>
+    <!-- custom.js 延迟加载 -->
+    <script>
+        // 延迟1秒加载自定义JS
+        setTimeout(function() {
+            var script = document.createElement('script');
+            script.src = '[[${assets_link}]]/js/custom.js[[${theme_version}]]';
+            script.async = true;
+            document.head.appendChild(script);
+        }, 1000);
+    </script>
     <th:block th:if="${head != null}">
         <th:block th:replace="${head}"/>
     </th:block>
@@ -119,10 +128,11 @@
 <div th:replace="~{modules/widgets/right-menu}"/>
 
 <div>
-    <!-- 异步加载核心JavaScript库 -->
+    <!-- 异步加载核心JavaScript - 零阻塞 -->
     <script>
-        // 异步加载核心业务库
+        // 立即异步加载核心JS
         (function(){
+            // 核心业务库数组
             var coreScripts = [
                 '[[${assets_link}]]/js/utils.js[[${theme_version}]]',
                 '[[${assets_link}]]/js/halo.js[[${theme_version}]]',
@@ -131,32 +141,7 @@
                 '[[${assets_link}]]/js/tw_cn.js[[${theme_version}]]'
             ];
             
-            function loadScriptSequentially(urls, index) {
-                if (index >= urls.length) return;
-                var script = document.createElement('script');
-                script.src = urls[index];
-                script.async = true;
-                script.onload = function() {
-                    loadScriptSequentially(urls, index + 1);
-                };
-                document.body.appendChild(script);
-            }
-            
-            // 页面加载完成后开始加载核心库
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    loadScriptSequentially(coreScripts, 0);
-                });
-            } else {
-                loadScriptSequentially(coreScripts, 0);
-            }
-        })();
-    </script>
-
-    <!-- 异步加载第三方库（按需） -->
-    <script>
-        // 异步加载工具库
-        (function(){
+            // 工具库数组（延迟加载）
             var toolScripts = [
                 '[[${assets_link}]]/libs/instantpage/instantpage.min.js',
                 '[[${assets_link}]]/libs/vanilla-lazyload/lazyload.iife.min.js',
@@ -170,56 +155,56 @@
                 '[[${assets_link}]]/libs/pjax/pjax.min.js'
             ];
             
-            // 延迟加载工具库
-            setTimeout(function() {
-                toolScripts.forEach(function(src) {
-                    var script = document.createElement('script');
-                    script.src = src;
-                    script.async = true;
-                    document.body.appendChild(script);
-                });
-            }, 1000);
-        })();
-    </script>
-
-    <!-- 条件加载的库 -->
-    <script>
-        // 条件加载
-        (function(){
-            // 按需加载的库
-            var conditionalScripts = [];
+            // 统一异步加载函数
+            function loadScriptsAsync(scripts, delay) {
+                setTimeout(function() {
+                    scripts.forEach(function(src) {
+                        if (!src) return;
+                        var script = document.createElement('script');
+                        script.src = src;
+                        script.async = true;
+                        script.onerror = function() {
+                            console.warn('JS加载失败:', src);
+                        };
+                        document.body.appendChild(script);
+                    });
+                }, delay);
+            }
             
-            // 延迟加载条件库
+            // 立即加载核心库
+            loadScriptsAsync(coreScripts, 0);
+            
+            // 延迟1.5秒加载工具库
+            loadScriptsAsync(toolScripts, 1500);
+            
+            // 条件加载（延迟2秒）
             setTimeout(function() {
-                // 检查是否需要加载swiper
+                var conditionalScripts = [];
+                
+                // 检查swiper
                 if (typeof themeConfig !== 'undefined' && themeConfig.top && themeConfig.top.moment) {
-                    var swiperScript = document.createElement('script');
-                    swiperScript.src = '[[${assets_link}]]/libs/swiper/swiper-bundle.min.js';
-                    swiperScript.async = true;
-                    document.body.appendChild(swiperScript);
+                    conditionalScripts.push('[[${assets_link}]]/libs/swiper/swiper-bundle.min.js');
                 }
                 
-                // 检查是否需要加载右键菜单
+                // 检查右键菜单
                 if (typeof themeConfig !== 'undefined' && themeConfig.tool && themeConfig.tool.rightMenu && themeConfig.tool.rightMenu.rightMenuEnable) {
-                    var menuScript = document.createElement('script');
-                    menuScript.src = '[[${assets_link}]]/zhheo/rightmenu.js';
-                    menuScript.async = true;
-                    document.body.appendChild(menuScript);
+                    conditionalScripts.push('[[${assets_link}]]/zhheo/rightmenu.js');
                 }
                 
-                // 检查是否需要加载评论弹幕
+                // 检查评论弹幕
                 if (typeof themeConfig !== 'undefined' && themeConfig.comments && 
                     themeConfig.comments.commentBarrageConfig && themeConfig.comments.commentBarrageConfig.commentBarrageEnable &&
                     themeConfig.comments.commentsEnable) {
-                    var barrageScript = document.createElement('script');
-                    barrageScript.src = '[[${assets_link}]]/zhheo/commentBarrage.js';
-                    barrageScript.async = true;
-                    barrageScript.setAttribute('data-pjax', '');
-                    document.body.appendChild(barrageScript);
+                    conditionalScripts.push('[[${assets_link}]]/zhheo/commentBarrage.js');
                 }
-            }, 1500);
+                
+                if (conditionalScripts.length > 0) {
+                    loadScriptsAsync(conditionalScripts, 0);
+                }
+            }, 2000);
         })();
     </script>
+
 
     <!-- 动态标题和评论配置 -->
     <div class="js-pjax">
